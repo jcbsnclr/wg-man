@@ -12,4 +12,4 @@ if [ "$USER" != "root" ] && [ -z "$DOAS" ]; then
 fi
 
 cargo build --release
-$DOAS cp -v target/x86_64-unknown-linux-musl/release/wg-man "$PREFIX/bin"
+$DOAS install -Dm755 target/release/wg-man "$PREFIX/bin"

@@ -1,6 +1,10 @@
 [package]
 name = "wg-man"
 version = "0.1.0"
+authors = ["Jacob Sinclair <jcbsnclr@outlook.com>"]
+description = "WireGuard configuration manager"
+repository = "https://github.com/jcbsnclr/wg-man"
+license-file = "LICENSE"
 edition = "2024"
 
 [dependencies]

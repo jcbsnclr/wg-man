@@ -147,6 +147,26 @@ fn bring_down(args: &Cmdline) -> Result<Option<String>, Error> {
     }
 }
 
+struct FromFn<F>(F);
+
+impl<F> FromFn<F> {
+    pub fn new(op: F) -> FromFn<F>
+    where
+        F: Fn(&mut std::fmt::Formatter<'_>) -> std::fmt::Result,
+    {
+        FromFn(op)
+    }
+}
+
+impl<F> Display for FromFn<F>
+where
+    F: Fn(&mut std::fmt::Formatter<'_>) -> std::fmt::Result,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.0(f)
+    }
+}
+
 fn main() -> anyhow::Result<()> {
     env_logger::init();
 
@@ -160,7 +180,15 @@ fn main() -> anyhow::Result<()> {
 
             log::debug!(
                 "matches:\n{}",
-                fmt::from_fn(|f| {
+                // nightly-only feature
+                // fmt::from_fn(|f| {
+                //     for s in ents.iter() {
+                //         writeln!(f, "- {s}")?;
+                //     }
+
+                //     Ok(())
+                // })
+                FromFn::new(|f| {
                     for s in ents.iter() {
                         writeln!(f, "- {s}")?;
                     }
@@ -193,7 +221,14 @@ fn main() -> anyhow::Result<()> {
 
             println!(
                 "matches:\n{}",
-                fmt::from_fn(|f| {
+                //     fmt::from_fn(|f| {
+                //         for s in ents.iter() {
+                //             writeln!(f, "- {s}")?;
+                //         }
+
+                //         Ok(())
+                //     })
+                FromFn::new(|f| {
                     for s in ents.iter() {
                         writeln!(f, "- {s}")?;
                     }
@@ -211,8 +246,6 @@ fn main() -> anyhow::Result<()> {
     }
 }
 
-// readme.md
-//
 // TODO: manage config files (add/remove from /etc/wireguard)
 //       avoid wg-quick
 //       write man page

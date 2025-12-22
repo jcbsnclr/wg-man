@@ -1,7 +1,7 @@
 #!/sbin/openrc-run
 
 name="WireGuard Manager"
-description="manages WireGuard client connection"
+description="WireGuard configuration manager"
 
 depend() {
   need net
