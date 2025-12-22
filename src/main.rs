@@ -24,23 +24,30 @@ pub enum Error {
 
 #[derive(Subcommand, Debug, Clone)]
 pub enum Command {
+    /// Bring up a random configuration matching `REGEX`
     Up {
+        /// Regex pattern to match against
         #[arg(value_name = "REGEX", default_value = "^")]
         pattern: Regex,
     },
 
+    /// List configurations matching `REGEX`
     Ls {
+        /// Regex pattern to match against
         #[arg(value_name = "REGEX", default_value = "^")]
         pattern: Regex,
     },
 
+    /// Bring down currently running configuration
     Down,
 }
 
 #[derive(Parser, Debug, Clone)]
 pub struct Cmdline {
+    /// Directory WireGuard configurations are found in
     #[arg(short, long, value_name = "DIR", default_value = "/etc/wireguard")]
     dir: PathBuf,
+    /// File to track currently running config
     #[arg(
         short,
         long,
@@ -48,6 +55,7 @@ pub struct Cmdline {
         default_value = "/run/wg-man.current"
     )]
     run_file: PathBuf,
+    /// Whether to run `wg-quick`, or just write command to `stdout`
     #[arg(short, long, default_value_t = false)]
     mock: bool,
     // #[arg(short, long, action = clap::ArgAction::Count)]
@@ -110,9 +118,9 @@ fn bring_up(args: &Cmdline, conf: &str) -> Result<(), Error> {
     }
 }
 
-fn bring_down(args: &Cmdline) -> Result<(), Error> {
+fn bring_down(args: &Cmdline) -> Result<Option<String>, Error> {
     if !args.run_file.exists() {
-        return Ok(());
+        return Ok(None);
     }
 
     let conf = fs::read_to_string(&args.run_file)?;
@@ -121,18 +129,18 @@ fn bring_down(args: &Cmdline) -> Result<(), Error> {
     if args.mock {
         println!("wg-quick down {conf}");
 
-        Ok(())
+        Ok(Some(conf))
     } else {
         let code = process::Command::new("wg-quick")
             .arg("down")
-            .arg(conf)
+            .arg(&conf)
             .spawn()?
             .wait()?;
 
         if code.success() {
             fs::remove_file(&args.run_file)?;
 
-            Ok(())
+            Ok(Some(conf))
         } else {
             Err(Error::WgQuick { code: code.code() }.into())
         }
@@ -148,7 +156,7 @@ fn main() -> anyhow::Result<()> {
 
     match &args.command {
         Command::Up { pattern } => {
-            let ents: Vec<_> = get_matches(&args, &pattern)?;
+            let ents = get_matches(&args, &pattern)?;
 
             log::debug!(
                 "matches:\n{}",
@@ -161,8 +169,16 @@ fn main() -> anyhow::Result<()> {
                 })
             );
 
-            if let Some(conf) = ents.choose(&mut rng) {
-                bring_down(&args)?;
+            let prev = bring_down(&args)?;
+            let conf = loop {
+                let choice = ents.choose(&mut rng);
+
+                if ents.len() == 1 || ents.choose(&mut rng) != prev.as_ref() {
+                    break choice;
+                }
+            };
+
+            if let Some(conf) = conf {
                 bring_up(&args, conf)?;
                 Ok(())
             } else {
@@ -173,7 +189,7 @@ fn main() -> anyhow::Result<()> {
             }
         }
         Command::Ls { pattern } => {
-            let ents: Vec<_> = get_matches(&args, &pattern)?;
+            let ents = get_matches(&args, &pattern)?;
 
             println!(
                 "matches:\n{}",
@@ -194,3 +210,13 @@ fn main() -> anyhow::Result<()> {
         }
     }
 }
+
+// readme.md
+//
+// TODO: manage config files (add/remove from /etc/wireguard)
+//       avoid wg-quick
+//       write man page
+//       make apk package
+//
+// to investigate:
+//       daemon mode, will switch VPN every X amount of time

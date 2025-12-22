@@ -1,0 +1,21 @@
+#!/sbin/openrc-run
+
+name="WireGuard Manager"
+description="manages WireGuard client connection"
+
+depend() {
+  need net
+  use dns
+}
+
+start() {
+  ebegin "Bringing up $name for pattern '$wg_man_regex'"
+  wg-man up "$wg_man_regex"
+  eend $? "Failed to bring up $name for pattern '$wg_man_regex'"
+}
+
+stop() {
+  ebegin "Bringing down $name"
+  wg-man down 
+  eend $? "Failed to bring down $name"
+}

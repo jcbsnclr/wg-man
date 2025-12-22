@@ -1,0 +1,3 @@
+# default pattern to match wireguard configurations against
+#wg_man_regex="^se"
+#RUST_LOG=info
