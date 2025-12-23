@@ -7,4 +7,6 @@ if [ "$USER" != "root" ] && [ -z "$DOAS" ]; then
   exit 1
 fi
 
-$DOAS cp -rv etc/* /etc/
+# $DOAS cp -rv etc/* /etc/
+$DOAS install -Dm755 etc/init.d/wg-man /etc/init.d/wg-man
+$DOAS install -Dm644 etc/conf.d/wg-man /etc/conf.d/wg-man
