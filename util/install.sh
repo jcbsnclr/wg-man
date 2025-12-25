@@ -4,7 +4,7 @@ if [ -z "$PREFIX" ]; then
   PREFIX="/usr/local"
 fi
 
-DOAS="$(which sudo | which doas)"
+DOAS="$(which sudo || which doas)"
 
 if [ "$USER" != "root" ] && [ -z "$DOAS" ]; then
   echo "$(basename $0): sudo or doas not found; exiting" 1>&2
